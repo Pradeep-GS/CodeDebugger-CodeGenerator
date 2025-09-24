@@ -1,6 +1,10 @@
 import json
 from openai import OpenAI
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
+api = os.getenv("API_KEY")
 def prompts(code, language):
     return f"""
 You are a professional coding tutor and debugging assistant. 
@@ -27,7 +31,7 @@ Your response format must be strictly JSON:
 def ansgen(prompt):
     client = OpenAI(
         base_url="https://openrouter.ai/api/v1",
-        api_key="",
+        api_key=api,
     )
 
     completion = client.chat.completions.create(
