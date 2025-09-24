@@ -1,17 +1,24 @@
 from flask import Flask, request, jsonify
-from ai import response  # your AI function
+from flask_cors import CORS
+from ai import response
 
 app = Flask(__name__)
+CORS(app)
 
-@app.route("/", methods=["POST"])
+@app.route("/response", methods=["POST"])
 def code():
     data = request.get_json()
     if not data or "code" not in data:
         return jsonify({"error": "Please provide code in JSON format"}), 400
 
     code_input = data.get("code")
-    responses = response(code_input)  # call your AI logic
-    return jsonify({"response": responses})
+    language = data.get("language")
+
+    try:
+        ai_response = response(code_input, language)
+        return jsonify(ai_response)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
