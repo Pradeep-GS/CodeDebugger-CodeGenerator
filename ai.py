@@ -1,11 +1,16 @@
 import json
+import os
 from openai import OpenAI
 from dotenv import load_dotenv
-import os
 
+# Load environment variables from .env
 load_dotenv()
-api = os.getenv("API_KEY")
+api_key = os.getenv("API_KEY")  # Make sure your .env has API_KEY=sk-xxxxxx
+
 def prompts(code, language):
+    """
+    Generate the AI prompt for debugging code.
+    """
     return f"""
 You are a professional coding tutor and debugging assistant. 
 Your task is to carefully analyze the following code and return a structured response.
@@ -29,40 +34,36 @@ Your response format must be strictly JSON:
 """
 
 def ansgen(prompt):
+    """
+    Call OpenAI API with the prompt and return the raw response.
+    """
     client = OpenAI(
         base_url="https://openrouter.ai/api/v1",
-        api_key=api,
+        api_key=api_key,
     )
 
     completion = client.chat.completions.create(
         extra_headers={
-            "HTTP-Referer": "<YOUR_SITE_URL>",
-            "X-Title": "<YOUR_SITE_NAME>",
+            "HTTP-Referer": "<YOUR_SITE_URL>",  # optional
+            "X-Title": "<YOUR_SITE_NAME>",      # optional
         },
         model="openai/gpt-3.5-turbo-0613",
         messages=[{"role": "user", "content": prompt}]
     )
+
     return completion.choices[0].message.content
 
 def response(codes, language):
-    pro = prompts(codes, language)
-    raw_response = ansgen(pro)
+    """
+    Generate AI debug response for the given code and language.
+    Parses JSON from AI and returns a dict with 'explanation' and 'fixedCode'.
+    """
+    prompt_text = prompts(codes, language)
+    raw_response = ansgen(prompt_text)
 
     try:
-        data = json.loads(raw_response)  # Parse AI output as JSON
+        data = json.loads(raw_response)  # parse AI output as JSON
     except json.JSONDecodeError:
+        # Return raw text if AI did not return valid JSON
         return {"error": "AI response was not valid JSON", "raw": raw_response}
-
     return data
-
-# Example usage
-result = response(
-    """a = "5"
-b = 2
-print(a + b)""",
-    "python"
-)
-
-print("Explanation:\n", result["explanation"])
-print("\nFixed Code:\n")
-print(result["fixedCode"])
